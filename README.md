@@ -2,7 +2,7 @@
 
 > **Client-side bank, GL & AP reconciliation engine with a 3-pass matching engine, batch resolution agent, composite scoring, and web dataset search.**
 
-**[▶ Live Demo](https://tarunmavuri.github.io/Fineatch-AI/)** &nbsp;·&nbsp; No API keys &nbsp;·&nbsp; No server &nbsp;·&nbsp; Open `index.html` and it runs.
+**[▶ Live Demo →  https://tarunmavuri.github.io/Fineatch-AI/](https://tarunmavuri.github.io/Fineatch-AI/)** &nbsp;·&nbsp; No API keys &nbsp;·&nbsp; No server &nbsp;·&nbsp; Open `index.html` and it runs.
 
 ---
 
