@@ -17,11 +17,12 @@
   <header class="header">
     <div class="brandmark">
       <div class="logo-mark" aria-hidden="true">
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="18" cy="18" r="17" stroke="url(#lg1)" stroke-width="2"/>
-          <text x="18" y="23" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="13" fill="url(#lg1)">F⊕</text>
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="19" stroke="url(#lg1)" stroke-width="1.5"/>
+          <circle cx="20" cy="20" r="14" fill="url(#lg1)" opacity="0.08"/>
+          <text x="20" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="800" font-size="14" fill="url(#lg1)">F⊕</text>
           <defs>
-            <linearGradient id="lg1" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+            <linearGradient id="lg1" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stop-color="#CAEF45"/>
               <stop offset="100%" stop-color="#A8FF3E"/>
             </linearGradient>
@@ -29,11 +30,17 @@
         </svg>
       </div>
       <div>
-        <h1>Fineatch <span class="brand-ai">AI</span></h1>
-        <div class="brand-sub">Bank · GL · AP reconciliation — multi-source · 50+ records · batch agent</div>
+        <h1 style="display:flex;align-items:center;gap:10px">
+          Fineatch <span class="brand-ai">AI</span>
+          <span style="font-size:10px;font-family:var(--font-mono);background:rgba(202,239,69,.12);color:#CAEF45;border:1px solid rgba(202,239,69,.25);padding:2px 8px;border-radius:20px;font-weight:500;letter-spacing:.05em">v1.0</span>
+        </h1>
+        <div class="brand-sub">Bank · GL · AP reconciliation &mdash; 3-pass engine · batch resolution agent · composite scoring</div>
       </div>
     </div>
     <div class="control-bar">
+      <button class="how-it-works-btn" id="howItWorksBtn" title="How It Works" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--ink-muted);font-size:11px;font-family:var(--font-mono);padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .2s">
+        ⓘ How It Works
+      </button>
       <label class="seed-tag" for="eventCount" style="cursor:pointer">
         events&nbsp;<input type="number" id="eventCount" min="20" max="500" value="65"
           style="width:52px;background:transparent;border:none;color:var(--indigo-300);font-family:var(--font-mono);font-size:11px" />
@@ -53,6 +60,61 @@
       </div>
     </div>
   </header>
+
+  <!-- ═══ HOW IT WORKS PANEL ═══ -->
+  <div class="how-it-works-panel" id="howItWorksPanel" style="display:none">
+    <div class="hiw-inner">
+      <div class="hiw-header">
+        <span class="hiw-title">How Fineatch AI Works</span>
+        <button class="hiw-close" id="howItWorksClose">✕</button>
+      </div>
+      <div class="hiw-body">
+        <div class="hiw-pipeline">
+          <div class="hiw-step">
+            <div class="hiw-step-num">1</div>
+            <div class="hiw-step-content">
+              <div class="hiw-step-title">Generate / Import Dataset</div>
+              <div class="hiw-step-desc">Click <strong>▶ Run Reconciliation</strong> to generate 65+ synthetic economic events via a seeded PRNG (Mulberry32, seed #84231), producing Bank, GL & AP records. Or import your own CSV files via <strong>⊕ Import Data</strong> — schema is auto-detected from column headers.</div>
+            </div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-step-num">2</div>
+            <div class="hiw-step-content">
+              <div class="hiw-step-title">3-Pass Reconciliation Engine</div>
+              <div class="hiw-step-desc"><strong>Pass 1 Exact (100%)</strong>: payment reference + amount. <strong>Pass 2 Fuzzy (70–99%)</strong>: amount ±0.5%, date proximity ≤3 days, narration similarity. <strong>Pass 3 Heuristic (40–69%)</strong>: vendor/counterparty name matching. Unmatched items become open exceptions.</div>
+            </div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-step-num">3</div>
+            <div class="hiw-step-content">
+              <div class="hiw-step-title">Batch Resolution Agent (FinAgentV1)</div>
+              <div class="hiw-step-desc">The agent processes every open exception and attempts resolution: rounding (<strong>AMT_MISMATCH</strong>), NEFT timing (<strong>DATE_GAP</strong>), split invoices (<strong>SPLIT_PAYMENT</strong>), FX gain/loss (<strong>FX_VARIANCE</strong>). Unresolvable items (e.g. <strong>DUPE_CANDIDATE</strong>) are surfaced for human review — never hidden.</div>
+            </div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-step-num">4</div>
+            <div class="hiw-step-content">
+              <div class="hiw-step-title">Scoring, Forecasting & Tax Classification</div>
+              <div class="hiw-step-desc">Each dataset receives a <strong>composite score (0–100)</strong> based on match rate (40%), AP settlement (25%), agent coverage (20%), and exception penalty (15%). A 30-day cash position forecast with p10–p90 bands is computed. GL entries are classified for GST-ITC, TDS-192, and GST-OUT exposure.</div>
+            </div>
+          </div>
+        </div>
+        <div class="hiw-files">
+          <div class="hiw-files-title">Project Files</div>
+          <div class="hiw-file-grid">
+            <div class="hiw-file"><span class="hiw-file-name">data.js</span><span class="hiw-file-desc">Mulberry32 PRNG synthetic dataset generator (seed #84231)</span></div>
+            <div class="hiw-file"><span class="hiw-file-name">reconciler.js</span><span class="hiw-file-desc">3-pass bank ↔ GL ↔ AP matching engine</span></div>
+            <div class="hiw-file"><span class="hiw-file-name">agent.js</span><span class="hiw-file-desc">FinAgentV1 batch resolution — resolved / unresolvable</span></div>
+            <div class="hiw-file"><span class="hiw-file-name">forecaster.js</span><span class="hiw-file-desc">30-day cash position model with p10–p90 bands</span></div>
+            <div class="hiw-file"><span class="hiw-file-name">tax_matcher.js</span><span class="hiw-file-desc">GST & TDS GL classification & exposure flagger</span></div>
+            <div class="hiw-file"><span class="hiw-file-name">importer.js</span><span class="hiw-file-desc">CSV parser, schema auto-detector & web dataset generator</span></div>
+            <div class="hiw-file"><span class="hiw-file-name">qa_agent.js</span><span class="hiw-file-desc">Rule-based offline settlement Q&amp;A router</span></div>
+            <div class="hiw-file"><span class="hiw-file-name">app.js</span><span class="hiw-file-desc">UI orchestrator — zero-state init, render loop, event wiring</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 
 
@@ -388,7 +450,7 @@
     <div id="datasetDetailCards"></div>
   </div>
 
-  <p class="footnote">Fineatch AI · synthetic + custom datasets · deterministic seed · no external network calls</p>
+  <p class="footnote">Fineatch AI · synthetic + custom datasets · deterministic seed · no external network calls &nbsp;·&nbsp; <a href="https://github.com/tarunmavuri/Fineatch-AI" target="_blank" rel="noopener" style="color:var(--acid);text-decoration:none;border-bottom:1px solid rgba(202,239,69,.3)">⎇ GitHub</a></p>
 </div>
 
 <!-- ═══ Q&A DOCK ═══ -->

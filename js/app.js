@@ -987,5 +987,23 @@ window.addEventListener('DOMContentLoaded', () => {
   $('#stampRate').textContent = '0.0%';
   renderAll();
   renderScoreboard();
+
+  // How It Works panel toggle
+  const hiwBtn   = $('#howItWorksBtn');
+  const hiwPanel = $('#howItWorksPanel');
+  const hiwClose = $('#howItWorksClose');
+  if (hiwBtn && hiwPanel && hiwClose) {
+    hiwBtn.addEventListener('click', () => {
+      const visible = hiwPanel.style.display !== 'none';
+      hiwPanel.style.display = visible ? 'none' : 'block';
+      hiwBtn.style.color = visible ? '' : 'var(--acid)';
+      hiwBtn.style.borderColor = visible ? '' : 'rgba(202,239,69,.3)';
+    });
+    hiwClose.addEventListener('click', () => {
+      hiwPanel.style.display = 'none';
+      hiwBtn.style.color = '';
+      hiwBtn.style.borderColor = '';
+    });
+  }
 });
 
