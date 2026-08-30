@@ -1,91 +1,92 @@
 # Fineatch AI — Finance Operations Controller
 
-> **Client-side bank, GL & AP reconciliation engine with an automated batch resolution agent, composite scoring, and web dataset search.**
+> **Client-side bank, GL & AP reconciliation engine with a 3-pass matching engine, batch resolution agent, composite scoring, and web dataset search.**
 
-Fineatch AI closes the finance-ops loop by automatically matching Bank transactions, GL journal entries, and AP invoices, calculating composite dataset health scores, and resolving open exceptions with actionable instructions or honest escalation notes.
-
----
-
-## ⚡ Key Features
-
-- 🎯 **3-Pass Matching Engine**:
-  - **Pass 1 Exact (100%)**: Payment reference & exact amount matching.
-  - **Pass 2 Fuzzy (70–99%)**: Amount tolerance (0.5%), date proximity (3 days), narration similarity.
-  - **Pass 3 Heuristic (40–69%)**: Vendor name & counterparty matching.
-- 🤖 **Batch Finance-Ops Agent (`FinAgentV1`)**:
-  - Automatically resolves resolvable exceptions (rounding, minor date gaps, split payments) with concrete action steps.
-  - Escalates complex/high-risk exceptions with transparent escalation notes.
-  - Computes **Agent Coverage Rate**.
-- 📊 **Dataset Scoreboard (0–100 Composite Score)**:
-  - Scores datasets based on *Match Rate* (40%), *AP Settlement* (25%), *Agent Coverage* (20%), and *Exception Penalty* (15%).
-  - Features visual SVG score rings and aggregate metrics across synthetic, imported, and web datasets.
-- 🌐 **Web Dataset Search & CSV Import**:
-  - Drag & drop local Bank, GL, and AP CSV files with header auto-detection.
-  - Search public web financial datasets or fetch live CSV/API links (`https://...`).
-  - Includes Quick Web Dataset presets (`🌐 Tech Corp Bank Statement`, `🌐 Enterprise GL Ledger`, `🌐 Global Vendors AP Invoices`).
-- 📈 **30-Day Cash Position Forecaster**:
-  - Projects cash balance trajectories with p10–p90 uncertainty confidence bands.
-- ⚖️ **GST & TDS Tax Classifier**:
-  - Auto-checks GL accounts against tax eligibility rules (GST-ITC, TDS-192) and flags exposure anomalies.
-- 💬 **Offline Settlement Q&A Engine**:
-  - Rule-based query router answering natural-language questions about transaction IDs, exceptions, cash outlooks, and web dataset searches.
+**[▶ Live Demo](https://tarunmavuri.github.io/Fineatch-AI/)** &nbsp;·&nbsp; No API keys &nbsp;·&nbsp; No server &nbsp;·&nbsp; Open `index.html` and it runs.
 
 ---
 
-## 🚀 How to Run
+## ⚡ Features
 
-### Quick Start (Zero Dependencies)
-
-1. Open [`finance-controller/index.html`](file:///c:/Users/bhanu/OneDrive/Desktop/Projects/Fineatch%20AI/finance-controller/index.html) in any web browser.
-2. The app initializes in **Zero State** (Match Rate: `0.0%`, Records: `0`, Scores: `0`).
-3. Click **▶ Run Reconciliation** to generate synthetic benchmark data and calculate scores.
-
-### Custom Data & Web Search Workflow
-
-1. Go to the **⊕ Import Data** tab.
-2. Drag & drop local CSV files or enter a public Web CSV URL / search query.
-3. Click **▶ Run on imported data** to execute the pipeline and view composite scores in **◈ Dataset Scores**.
+- **3-Pass Reconciliation Engine** — Exact (100%), Fuzzy (70–99%), Heuristic (40–69%) matching across Bank, GL & AP records
+- **Batch Resolution Agent (`FinAgentV1`)** — Auto-resolves exceptions (rounding, date gaps, split payments, FX variance); escalates unresolvable items with typed reasons — never hides failures
+- **Composite Dataset Scoreboard** — 0–100 score per dataset based on match rate (40%), AP settlement (25%), agent coverage (20%), exception penalty (15%); SVG score rings with color-coded health bands
+- **Web Dataset Search & Fetch** — Enter any public CSV URL or search query; one-click Quick Web Dataset presets (Tech Corp Bank Statement, Enterprise GL Ledger, Global Vendors AP)
+- **Local CSV Import** — Drag & drop Bank, GL, AP files with automatic schema detection from column headers
+- **30-Day Cash Forecaster** — Forward cash position model with p10–p90 uncertainty bands
+- **Tax Classifier** — GST-ITC, TDS-192, GST-OUT GL classification with account mismatch & exposure flagging
+- **Offline Q&A Agent** — Rule-based natural language router for transaction lookups, exception queries, cash outlook
+- **Zero-State Init** — All KPIs, charts, and scores start at `0` until **▶ Run** is clicked
+- **ⓘ How It Works panel** — Inline pipeline walkthrough & file reference, toggled from the header
 
 ---
 
-## 📁 Project Architecture
+## 🚀 Quick Start
+
+```bash
+# No install needed — just open in any browser
+open index.html
+```
+
+Or deploy to GitHub Pages:
+1. Push to a GitHub repo
+2. Go to **Settings → Pages → Branch: `master` → `/` (root)**
+3. Live at `https://<username>.github.io/<repo>/`
+
+---
+
+## 📁 File Reference
 
 ```
-finance-controller/
-├── index.html              Main web application shell
+├── index.html              Main app shell (header, tabs, KPI strip, panels, Q&A dock)
+├── README.md
 ├── css/
-│   └── styles.css          Design system (dark theme, SVG score rings, cards)
+│   └── styles.css          Carbon Intelligence design system (dark theme, acid/violet palette)
 └── js/
-    ├── app.js              UI orchestrator, event handlers, zero-state initialization
-    ├── agent.js            FinAgentV1 batch resolution agent & coverage calculator
-    ├── reconciler.js       3-pass bank ↔ GL ↔ AP reconciliation engine
-    ├── data.js             Deterministic PRNG synthetic dataset generator (Seed #84231)
-    ├── importer.js         CSV parser, schema auto-detector & web dataset generator
-    ├── forecaster.js       30-day cash position & p10-p90 confidence band forecaster
-    ├── tax_matcher.js      GST & TDS tax classification & exposure flagger
-    └── qa_agent.js         Offline settlement Q&A natural language router
+    ├── data.js             Mulberry32 PRNG synthetic dataset generator — seed #84231
+    ├── reconciler.js       3-pass bank ↔ GL ↔ AP matching engine
+    ├── agent.js            FinAgentV1 — batch exception resolution & escalation
+    ├── forecaster.js       30-day cash position model with p10–p90 bands
+    ├── tax_matcher.js      GST & TDS GL classification & exposure flagger
+    ├── importer.js         CSV parser, schema auto-detector & web dataset presets
+    ├── qa_agent.js         Offline rule-based settlement Q&A router
+    └── app.js              UI orchestrator — zero-state init, render loop, event wiring
 ```
 
 ---
 
-## 📊 Score & Exception Taxonomy
+## 📊 Score Formula & Exception Codes
 
-### Composite Score Formula (0–100)
+### Composite Score (0–100)
 
-$$\text{Score} = (\text{Match Rate} \times 40) + (\text{AP Settlement} \times 25) + (\text{Agent Coverage} \times 20) + (15 - \text{Exception Penalty})$$
+| Component | Weight |
+|---|---|
+| Match Rate (bank ↔ GL) | 40% |
+| AP Settlement Rate | 25% |
+| Agent Coverage Rate | 20% |
+| Exception Penalty | 15% |
+
+**80–100** 🟢 Strong &nbsp;·&nbsp; **60–79** 🟡 Acceptable &nbsp;·&nbsp; **0–59** 🔴 Investigate
 
 ### Exception Reason Codes
 
-| Reason Code | Trigger Condition | Auto-Resolution Behavior |
+| Code | Trigger | Auto-Resolved? |
 |---|---|---|
-| `AMT_MISMATCH` | Amount gap > 0.5% | Resolved if gap < 5% (TDS / rounding) |
-| `DATE_GAP` | Date difference > 3 days | Resolved if ≤ 7 days (NEFT timing) |
-| `NO_REF` | Missing payment reference | Resolved if vendor & amount match |
-| `DUPE_CANDIDATE` | Two GL lines match 1 debit | **Always Escalated** (Human sign-off required) |
-| `FX_VARIANCE` | FX rate mismatch | Resolved if variance < 2% (FX gain/loss) |
-| `SPLIT_PAYMENT` | 1 debit = multiple AP invoices | Resolved if sum of AP legs matches debit |
-| `ADVANCE_PAYMENT` | Bank debit before invoice | Resolved conditionally on timing |
+| `AMT_MISMATCH` | Amount gap > 0.5% | ✓ if gap < 5% |
+| `DATE_GAP` | Date diff > 3 days | ✓ if ≤ 7 days |
+| `NO_REF` | Missing payment reference | ✓ if vendor + amount match |
+| `DUPE_CANDIDATE` | Two GL lines match 1 bank debit | ✗ Always escalated |
+| `FX_VARIANCE` | FX rate mismatch | ✓ if variance < 2% |
+| `SPLIT_PAYMENT` | 1 debit = multiple AP invoices | ✓ if sum of legs matches |
+| `ADVANCE_PAYMENT` | Bank debit before invoice date | Conditional |
 
 ---
 
-*Fineatch AI · All processing is local · No API keys · No external network dependency.*
+## 🔗 Links
+
+- **Live App**: [tarunmavuri.github.io/Fineatch-AI](https://tarunmavuri.github.io/Fineatch-AI/)
+- **Repo**: [github.com/tarunmavuri/Fineatch-AI](https://github.com/tarunmavuri/Fineatch-AI)
+
+---
+
+*Fineatch AI · All processing is local · No API keys · No external network dependency*
