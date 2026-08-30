@@ -38,7 +38,9 @@
       </div>
     </div>
     <div class="control-bar">
-      <button class="how-it-works-btn" id="howItWorksBtn" title="How It Works" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--ink-muted);font-size:11px;font-family:var(--font-mono);padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .2s">
+      <button class="how-it-works-btn" id="howItWorksBtn" title="How It Works"
+        onclick="(function(){var p=document.getElementById('howItWorksPanel');var b=document.getElementById('howItWorksBtn');var show=p.style.display==='none';p.style.display=show?'block':'none';b.style.color=show?'var(--acid)':'';b.style.background=show?'rgba(202,239,69,.08)':'rgba(255,255,255,.05)';})()"
+        style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--ink-dim);font-size:11px;font-family:var(--font-mono);padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .2s">
         ⓘ How It Works
       </button>
       <label class="seed-tag" for="eventCount" style="cursor:pointer">
@@ -66,7 +68,8 @@
     <div class="hiw-inner">
       <div class="hiw-header">
         <span class="hiw-title">How Fineatch AI Works</span>
-        <button class="hiw-close" id="howItWorksClose">✕</button>
+        <button class="hiw-close" id="howItWorksClose"
+          onclick="document.getElementById('howItWorksPanel').style.display='none';document.getElementById('howItWorksBtn').style.color='';document.getElementById('howItWorksBtn').style.background='rgba(255,255,255,.05)'">✕</button>
       </div>
       <div class="hiw-body">
         <div class="hiw-pipeline">
