@@ -13,40 +13,58 @@
 <body>
 <div class="shell">
 
-  <!-- ═══ HEADER ═══ -->
+  <!-- ═══ HEADER / CONTROL BAR ═══ -->
   <header class="header">
     <div class="brandmark">
       <div class="logo-mark" aria-hidden="true">
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="20" cy="20" r="19" stroke="url(#lg1)" stroke-width="1.5"/>
-          <circle cx="20" cy="20" r="14" fill="url(#lg1)" opacity="0.08"/>
-          <text x="20" y="25" text-anchor="middle" font-family="Inter,sans-serif" font-weight="800" font-size="14" fill="url(#lg1)">F⊕</text>
-          <defs>
-            <linearGradient id="lg1" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#CAEF45"/>
-              <stop offset="100%" stop-color="#A8FF3E"/>
-            </linearGradient>
-          </defs>
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="23" fill="#0E1420" stroke="#22D3EE" stroke-width="2" stroke-opacity="0.7"/>
+          <!-- Circuit / node AI motif -->
+          <path d="M14 24h5m10 0h5M24 14v5m0 10v5" stroke="#22D3EE" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <circle cx="14" cy="24" r="1.5" fill="#22D3EE"/>
+          <circle cx="34" cy="24" r="1.5" fill="#22D3EE"/>
+          <circle cx="24" cy="14" r="1.5" fill="#22D3EE"/>
+          <circle cx="24" cy="34" r="1.5" fill="#22D3EE"/>
+          <!-- Central bold monogram -->
+          <text x="24" y="29" text-anchor="middle" font-family="'Space Grotesk', 'Inter', sans-serif" font-weight="800" font-size="15" fill="#22D3EE" letter-spacing="-0.02em">F⊕</text>
         </svg>
       </div>
-      <div>
-        <h1 style="display:flex;align-items:center;gap:10px">
-          Fineatch <span class="brand-ai">AI</span>
-          <span style="font-size:10px;font-family:var(--font-mono);background:rgba(202,239,69,.12);color:#CAEF45;border:1px solid rgba(202,239,69,.25);padding:2px 8px;border-radius:20px;font-weight:500;letter-spacing:.05em">v1.0</span>
-        </h1>
-        <div class="brand-sub">Bank · GL · AP reconciliation &mdash; 3-pass engine · batch resolution agent · composite scoring</div>
+      <div class="brand-text-block">
+        <div class="brand-title-row">
+          <h1 class="brand-title">Fineatch<span class="brand-ai">AI</span></h1>
+          <span class="version-badge">v1.0</span>
+        </div>
+        <div class="brand-sub">BANK · GL · AP RECONCILIATION — 3-PASS ENGINE · BATCH RESOLUTION AGENT · COMPOSITE SCORING</div>
       </div>
     </div>
     <div class="control-bar">
-      <button class="how-it-works-btn" id="howItWorksBtn" title="How It Works"
-        onclick="(function(){var p=document.getElementById('howItWorksPanel');var b=document.getElementById('howItWorksBtn');var show=p.style.display==='none';p.style.display=show?'block':'none';b.style.color=show?'var(--acid)':'';b.style.background=show?'rgba(202,239,69,.08)':'rgba(255,255,255,.05)';})()"
-        style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--ink-dim);font-size:11px;font-family:var(--font-mono);padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .2s">
-        ⓘ How It Works
+      <button class="how-it-works-btn" id="howItWorksBtn" title="How It Works">
+        <svg class="hiw-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        How It Works
       </button>
-      <label class="seed-tag" for="eventCount" style="cursor:pointer">
-        events&nbsp;<input type="number" id="eventCount" min="20" max="500" value="65"
-          style="width:52px;background:transparent;border:none;color:var(--indigo-300);font-family:var(--font-mono);font-size:11px" />
-      </label>
+      <div class="events-pill-wrap" id="eventsPillWrap">
+        <label class="seed-tag events-pill" id="eventsPill" for="eventCount">
+          <span id="eventsPillLabel">events</span>
+          <input type="number" id="eventCount" min="20" max="500" value="65" />
+          <button type="button" class="pill-add-btn" id="openDatasetPopover" title="Test with More Datasets">+</button>
+        </label>
+        <span class="dataset-toast" id="datasetToast" style="display:none"></span>
+        
+        <!-- Inline Popover -->
+        <div class="dataset-popover" id="datasetPopover" style="display:none">
+          <div class="popover-title">Test with More Datasets</div>
+          <div class="popover-row">
+            <span>Add datasets:</span>
+            <select id="fetchDatasetCount" class="popover-select">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <button type="button" class="popover-fetch-btn" id="fetchDatasetBtn">Fetch</button>
+          </div>
+        </div>
+      </div>
       <span class="seed-tag" id="seedTag">seed #84231</span>
       <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
       <span class="elapsed" id="elapsedLabel">0.0s</span>
@@ -54,11 +72,26 @@
         <span class="run-icon">▶</span> Run Reconciliation
       </button>
     </div>
-    <!-- Stamp anchored inside header -->
-    <div class="stamp" id="stamp">
-      <div class="stamp-inner">
-        <span class="stamp-rate" id="stampRate">—</span>
-        <span class="stamp-label">RECONCILED</span>
+    <!-- Live Circular Score Gauge -->
+    <div class="score-gauge band-high" id="scoreGauge" aria-label="Reconciliation match rate score gauge">
+      <svg class="gauge-svg" width="76" height="76" viewBox="0 0 76 76">
+        <defs>
+          <linearGradient id="gaugeGradCyanGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#22D3EE" />
+            <stop offset="100%" stop-color="#4ADE80" />
+          </linearGradient>
+        </defs>
+        <!-- Background Track Ring (0–100%) -->
+        <circle class="gauge-track" cx="38" cy="38" r="33" />
+        <!-- Foreground Dynamic Progress Arc -->
+        <circle class="gauge-progress" id="gaugeProgress" cx="38" cy="38" r="33" />
+      </svg>
+      <div class="gauge-content">
+        <div class="gauge-rate-row">
+          <span class="gauge-delta" id="gaugeDelta"></span>
+          <span class="gauge-rate" id="gaugeRate">—</span>
+        </div>
+        <span class="gauge-label">Reconciled</span>
       </div>
     </div>
   </header>
@@ -68,8 +101,7 @@
     <div class="hiw-inner">
       <div class="hiw-header">
         <span class="hiw-title">How Fineatch AI Works</span>
-        <button class="hiw-close" id="howItWorksClose"
-          onclick="document.getElementById('howItWorksPanel').style.display='none';document.getElementById('howItWorksBtn').style.color='';document.getElementById('howItWorksBtn').style.background='rgba(255,255,255,.05)'">✕</button>
+        <button class="hiw-close" id="howItWorksClose">✕</button>
       </div>
       <div class="hiw-body">
         <div class="hiw-pipeline">
@@ -453,7 +485,7 @@
     <div id="datasetDetailCards"></div>
   </div>
 
-  <p class="footnote">Fineatch AI · synthetic + custom datasets · deterministic seed · no external network calls &nbsp;·&nbsp; <a href="https://github.com/tarunmavuri/Fineatch-AI" target="_blank" rel="noopener" style="color:var(--acid);text-decoration:none;border-bottom:1px solid rgba(202,239,69,.3)">⎇ GitHub</a></p>
+  <p class="footnote">Fineatch AI · synthetic + custom datasets · deterministic seed · no external network calls &nbsp;·&nbsp; <a href="https://github.com/tarunmavuri/Fineatch-AI" target="_blank" rel="noopener" class="github-link">⎇ GitHub</a></p>
 </div>
 
 <!-- ═══ Q&A DOCK ═══ -->

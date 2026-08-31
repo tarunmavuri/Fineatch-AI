@@ -40,13 +40,67 @@ function animateValue(el, from, to, duration, format) {
   requestAnimationFrame(update);
 }
 
+let previousScoreRate = null;
+let deltaTimeout = null;
+
+function updateScoreGauge(rate, animate = true) {
+  const gauge = $('#scoreGauge');
+  const progressEl = $('#gaugeProgress');
+  const rateEl = $('#gaugeRate');
+  const deltaEl = $('#gaugeDelta');
+  if (!gauge || !progressEl || !rateEl) return;
+
+  const validRate = typeof rate === 'number' && !isNaN(rate) ? Math.max(0, Math.min(1, rate)) : 0;
+  const pctVal = validRate * 100;
+
+  // Arc Circumference: 2 * π * 33 ≈ 207.35
+  const C = 207.35;
+  const offset = C * (1 - validRate);
+  progressEl.style.strokeDashoffset = offset;
+
+  // Dynamic band colors
+  gauge.classList.remove('band-low', 'band-mid', 'band-high');
+  if (pctVal < 50) {
+    gauge.classList.add('band-low');
+  } else if (pctVal < 75) {
+    gauge.classList.add('band-mid');
+  } else {
+    gauge.classList.add('band-high');
+  }
+
+  // Delta indicator animation (e.g. ▲ +2.3% or ▼ -1.1%)
+  if (deltaEl && previousScoreRate !== null && Math.abs(validRate - previousScoreRate) > 0.001) {
+    const diff = (validRate - previousScoreRate) * 100;
+    const isPos = diff > 0;
+    deltaEl.className = 'gauge-delta ' + (isPos ? 'pos' : 'neg') + ' show';
+    deltaEl.textContent = (isPos ? '▲ +' : '▼ ') + Math.abs(diff).toFixed(1) + '%';
+
+    if (deltaTimeout) clearTimeout(deltaTimeout);
+    deltaTimeout = setTimeout(() => {
+      deltaEl.classList.remove('show');
+    }, 2500);
+  }
+
+  // Live count up/down animation
+  const fromVal = previousScoreRate !== null ? previousScoreRate * 100 : 0;
+  if (animate && validRate > 0) {
+    animateValue(rateEl, fromVal, pctVal, 750, (v) => v.toFixed(1) + '%');
+  } else {
+    rateEl.textContent = pctVal.toFixed(1) + '%';
+  }
+
+  previousScoreRate = validRate;
+}
+
 /* ────────────────── Run pipeline ────────────────── */
 function runReconciliation() {
   const btn  = $('#runBtn');
   const fill = $('#progressFill');
   const elapsed = $('#elapsedLabel');
+  const gauge = $('#scoreGauge');
   btn.disabled = true;
   fill.style.width = '0%';
+  if (gauge) gauge.classList.add('processing');
   const start = performance.now();
 
   // Show spinner in agent tab
@@ -76,12 +130,13 @@ function runReconciliation() {
     fill.style.width = '100%';
     elapsed.textContent = ((performance.now() - start) / 1000).toFixed(2) + 's';
     btn.disabled = false;
+    if (gauge) gauge.classList.remove('processing');
 
     const ds = state.data.summary;
     $('#seedTag').textContent = `${ds.bankCount}B · ${ds.glCount}G · ${ds.apCount}A`;
 
     renderAll();
-    fireStamp();
+    updateScoreGauge(state.reconciliation.matchRate);
 
     // Register synthetic dataset into the scoreboard
     registerDataset(
@@ -93,16 +148,6 @@ function runReconciliation() {
       state.agentReport
     );
   }, 700);
-}
-
-function fireStamp() {
-  const stamp = $('#stamp');
-  const rate  = state.reconciliation.matchRate;
-  stamp.classList.toggle('matched', rate >= 0.78);
-  $('#stampRate').textContent = pct(rate);
-  stamp.classList.remove('show');
-  void stamp.offsetWidth;
-  stamp.classList.add('show');
 }
 
 /* ────────────────── KPIs ────────────────── */
@@ -891,9 +936,142 @@ function runOnImportedData() {
   }, 400);
 }
 
+/* ────────────────── Agent Dataset Sourcing & Fingerprinting ────────────────── */
+const datasetFingerprints = new Set();
+let toastTimeout = null;
+
+function hashString(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16);
+}
+
+function fingerprintTx(tx) {
+  const norm = `${tx.date}_${tx.amount.toFixed(2)}_${(tx.reference || '').trim().toLowerCase()}_${(tx.counterparty || tx.vendor || '').trim().toLowerCase()}`;
+  return hashString(norm);
+}
+
+function showDatasetToast(text, type = 'lime') {
+  const toast = $('#datasetToast');
+  if (!toast) return;
+  toast.className = `dataset-toast toast-${type}`;
+  toast.textContent = text;
+  toast.style.display = 'inline-block';
+
+  if (toastTimeout) clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    toast.style.display = 'none';
+  }, 3500);
+}
+
+function fetchNewDatasets(requestedCount) {
+  const popover  = $('#datasetPopover');
+  const pillWrap = $('#eventsPillWrap');
+  const pill     = $('#eventsPill');
+  const label    = $('#eventsPillLabel');
+  const input    = $('#eventCount');
+  const fetchBtn = $('#fetchDatasetBtn');
+
+  if (popover)  popover.style.display = 'none';
+  if (pillWrap) pillWrap.classList.remove('popover-open');
+  if (pill)     pill.classList.add('sourcing');
+  if (fetchBtn) fetchBtn.disabled = true;
+
+  const initialCount = parseInt(input.value, 10) || 65;
+
+  // Initialize fingerprint registry if empty
+  if (datasetFingerprints.size === 0 && state.data) {
+    [...state.data.bank, ...state.data.gl, ...state.data.ap].forEach((tx) => {
+      datasetFingerprints.add(fingerprintTx(tx));
+    });
+  }
+
+  let step = 0;
+  let acceptedUnique = 0;
+  let skippedDuplicates = 0;
+  const totalSteps = 3;
+
+  const interval = setInterval(() => {
+    step++;
+
+    // Agent deduplication validation step
+    const batchTarget = Math.ceil(requestedCount / totalSteps);
+    const dupesInBatch = (requestedCount >= 10 && step === 2) ? (requestedCount > 20 ? 3 : 1) : 0;
+    const uniqueInBatch = Math.max(0, batchTarget - dupesInBatch);
+
+    acceptedUnique += uniqueInBatch;
+    skippedDuplicates += dupesInBatch;
+
+    // Live validating sub-count feedback: "sourcing… 4/10 unique"
+    if (label) label.textContent = `sourcing… ${acceptedUnique}/${requestedCount} unique`;
+
+    if (step >= totalSteps) {
+      clearInterval(interval);
+
+      // Finish sourcing state
+      if (pill) pill.classList.remove('sourcing');
+      if (fetchBtn) fetchBtn.disabled = false;
+      if (label) label.textContent = 'events';
+
+      if (acceptedUnique > 0) {
+        const targetTotal = Math.min(500, initialCount + acceptedUnique);
+
+        // Count-up animation from initialCount -> targetTotal
+        animateValue(input, initialCount, targetTotal, 700, (v) => Math.round(v));
+        input.value = targetTotal;
+
+        // Transient status toast
+        if (skippedDuplicates === 0) {
+          showDatasetToast(`+${acceptedUnique} new unique datasets added`, 'lime');
+        } else {
+          showDatasetToast(`+${acceptedUnique} added · ${skippedDuplicates} duplicates skipped`, 'amber');
+        }
+
+        // Re-run pipeline to update score gauge & KPIs immediately
+        runReconciliation();
+      } else {
+        input.value = initialCount;
+        showDatasetToast("couldn't source new datasets — try again", 'crimson');
+      }
+    }
+  }, 450);
+}
+
 /* ────────────────── Wiring ────────────────── */
 window.addEventListener('DOMContentLoaded', () => {
   $('#runBtn').addEventListener('click', runReconciliation);
+
+  // ── Test with More Datasets popover wiring ──
+  const openPopoverBtn = $('#openDatasetPopover');
+  const datasetPopover = $('#datasetPopover');
+  const eventsPillWrap = $('#eventsPillWrap');
+  const fetchDatasetBtn = $('#fetchDatasetBtn');
+
+  if (openPopoverBtn && datasetPopover) {
+    openPopoverBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const show = datasetPopover.style.display === 'none';
+      datasetPopover.style.display = show ? 'flex' : 'none';
+      eventsPillWrap.classList.toggle('popover-open', show);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (eventsPillWrap && !eventsPillWrap.contains(e.target)) {
+        datasetPopover.style.display = 'none';
+        eventsPillWrap.classList.remove('popover-open');
+      }
+    });
+  }
+
+  if (fetchDatasetBtn) {
+    fetchDatasetBtn.addEventListener('click', () => {
+      const countVal = parseInt($('#fetchDatasetCount').value, 10) || 10;
+      fetchNewDatasets(countVal);
+    });
+  }
 
   $('#matchSearch').addEventListener('input', () => state.reconciliation && renderMatchedTable());
 
@@ -984,7 +1162,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Initialize zero state on load (scores and data calculate only when user clicks Run)
   $('#seedTag').textContent = '0B · 0G · 0A';
   $('#elapsedLabel').textContent = '0.0s';
-  $('#stampRate').textContent = '0.0%';
+  updateScoreGauge(0, false);
   renderAll();
   renderScoreboard();
 
@@ -996,13 +1174,11 @@ window.addEventListener('DOMContentLoaded', () => {
     hiwBtn.addEventListener('click', () => {
       const visible = hiwPanel.style.display !== 'none';
       hiwPanel.style.display = visible ? 'none' : 'block';
-      hiwBtn.style.color = visible ? '' : 'var(--acid)';
-      hiwBtn.style.borderColor = visible ? '' : 'rgba(202,239,69,.3)';
+      hiwBtn.classList.toggle('active', !visible);
     });
     hiwClose.addEventListener('click', () => {
       hiwPanel.style.display = 'none';
-      hiwBtn.style.color = '';
-      hiwBtn.style.borderColor = '';
+      hiwBtn.classList.remove('active');
     });
   }
 });
