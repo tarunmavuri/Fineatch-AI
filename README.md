@@ -1,6 +1,6 @@
 # Fineatch AI — Finance Operations Controller
 
-> **Client-side bank, GL & AP reconciliation engine with a 3-pass matching engine, batch resolution agent, composite scoring, and web dataset search.**
+> **Client-side bank, GL & AP reconciliation engine featuring a 3-pass matching engine, batch resolution agent, dynamic score gauge, dataset sourcing agent, and dark precision floating-slab UI.**
 
 **[▶ Live Demo →  https://tarunmavuri.github.io/Fineatch-AI/](https://tarunmavuri.github.io/Fineatch-AI/)** &nbsp;·&nbsp; No API keys &nbsp;·&nbsp; No server &nbsp;·&nbsp; Open `index.html` and it runs.
 
@@ -8,28 +8,30 @@
 
 ## ⚡ Features
 
-- **3-Pass Reconciliation Engine** — Exact (100%), Fuzzy (70–99%), Heuristic (40–69%) matching across Bank, GL & AP records
-- **Batch Resolution Agent (`FinAgentV1`)** — Auto-resolves exceptions (rounding, date gaps, split payments, FX variance); escalates unresolvable items with typed reasons — never hides failures
-- **Composite Dataset Scoreboard** — 0–100 score per dataset based on match rate (40%), AP settlement (25%), agent coverage (20%), exception penalty (15%); SVG score rings with color-coded health bands
-- **Web Dataset Search & Fetch** — Enter any public CSV URL or search query; one-click Quick Web Dataset presets (Tech Corp Bank Statement, Enterprise GL Ledger, Global Vendors AP)
-- **Local CSV Import** — Drag & drop Bank, GL, AP files with automatic schema detection from column headers
-- **30-Day Cash Forecaster** — Forward cash position model with p10–p90 uncertainty bands
-- **Tax Classifier** — GST-ITC, TDS-192, GST-OUT GL classification with account mismatch & exposure flagging
-- **Offline Q&A Agent** — Rule-based natural language router for transaction lookups, exception queries, cash outlook
-- **Zero-State Init** — All KPIs, charts, and scores start at `0` until **▶ Run** is clicked
-- **ⓘ How It Works panel** — Inline pipeline walkthrough & file reference, toggled from the header
+- **Dark Precision Floating Slab UI** — Near-black `#0B0C0E` base canvas, floating dark slabs (`#141518` → `#1A1B1F`, `24px` radius) with hairline borders, cyan `#22D3EE` hero accents, and glowing `#0E1420` circular logo badge.
+- **Live Circular Score Gauge** — Dynamic SVG dual-ring gauge (`0–100%`) replacing static stamps. Features animated progress arc, dynamic band colors (Red `<50%`, Amber `50–74%`, Cyan-to-Emerald `75–100%`), live delta indicator (`▲ +2.3%`), and pulse animation during processing.
+- **Agent Dataset Sourcing & Deduplication** — "Test with More Datasets" control via editable stat pill and inline popover. Hashes transaction contents (FNV-1a fingerprinting), skips duplicates (>90% overlap), shows live validating sub-counts (`sourcing… 4/10 unique`), and triggers real-time reconciliation re-scoring.
+- **3-Pass Reconciliation Engine** — Exact (100%), Fuzzy (70–99%), Heuristic (40–69%) matching across Bank, GL & AP records.
+- **Batch Resolution Agent (`FinAgentV1`)** — Auto-resolves exceptions (rounding, date gaps, split payments, FX variance); escalates unresolvable items with typed reasons — never hides failures.
+- **Composite Dataset Scoreboard** — 0–100 score per dataset based on match rate (40%), AP settlement (25%), agent coverage (20%), and exception penalty (15%) with SVG score rings.
+- **Web Dataset Search & Fetch** — Fetch live public CSV URLs or search datasets; includes Quick Web Dataset presets (Tech Corp Bank Statement, Enterprise GL Ledger, Global Vendors AP).
+- **Local CSV Import** — Drag & drop Bank, GL, AP files with automatic schema detection from column headers.
+- **30-Day Cash Forecaster** — Forward cash position model with p10–p90 uncertainty bands.
+- **Tax Classifier** — GST-ITC, TDS-192, GST-OUT GL classification with exposure flagging.
+- **Offline Q&A Agent** — Rule-based natural language router for transaction lookups, exception queries, and cash outlook.
+- **Zero-State Init** — All KPIs, charts, and scores start at `0` until **▶ Run Reconciliation** is clicked.
 
 ---
 
 ## 🚀 Quick Start
 
 ```bash
-# No install needed — just open in any browser
+# No install needed — open index.html in any modern browser
 open index.html
 ```
 
 Or deploy to GitHub Pages:
-1. Push to a GitHub repo
+1. Push to a GitHub repository
 2. Go to **Settings → Pages → Branch: `master` → `/` (root)**
 3. Live at `https://<username>.github.io/<repo>/`
 
@@ -38,10 +40,10 @@ Or deploy to GitHub Pages:
 ## 📁 File Reference
 
 ```
-├── index.html              Main app shell (header, tabs, KPI strip, panels, Q&A dock)
-├── README.md
+├── index.html              Main app shell (header, control bar, score gauge, tabs, KPI strip, panels, Q&A dock)
+├── README.md               Project documentation
 ├── css/
-│   └── styles.css          Carbon Intelligence design system (dark theme, acid/violet palette)
+│   └── styles.css          Dark Precision design system (floating slabs, cyan glow, score gauge, pills, toasts)
 └── js/
     ├── data.js             Mulberry32 PRNG synthetic dataset generator — seed #84231
     ├── reconciler.js       3-pass bank ↔ GL ↔ AP matching engine
@@ -50,7 +52,7 @@ Or deploy to GitHub Pages:
     ├── tax_matcher.js      GST & TDS GL classification & exposure flagger
     ├── importer.js         CSV parser, schema auto-detector & web dataset presets
     ├── qa_agent.js         Offline rule-based settlement Q&A router
-    └── app.js              UI orchestrator — zero-state init, render loop, event wiring
+    └── app.js              UI orchestrator — zero-state init, live score gauge animator, dataset sourcing agent
 ```
 
 ---
