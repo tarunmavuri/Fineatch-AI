@@ -11,6 +11,55 @@
 <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
+
+<!-- ═══ SPLASH / INTRO SCREEN ═══ -->
+<div class="splash-screen" id="splashScreen">
+  <!-- Ambient background glowing orbs -->
+  <div class="splash-ambient-orb orb-1" aria-hidden="true"></div>
+  <div class="splash-ambient-orb orb-2" aria-hidden="true"></div>
+
+  <!-- Hero Content Center Column -->
+  <div class="splash-content" id="splashContent">
+    <!-- 1. Hero Logo Badge -->
+    <div class="splash-logo-wrap">
+      <div class="splash-logo-badge" aria-hidden="true">
+        <svg width="120" height="120" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="23" fill="#0E1420" stroke="#22D3EE" stroke-width="2" stroke-opacity="0.85"/>
+          <!-- Circuit / node AI motif -->
+          <path d="M14 24h5m10 0h5M24 14v5m0 10v5" stroke="#22D3EE" stroke-width="1.5" stroke-linecap="round" opacity="0.75"/>
+          <circle cx="14" cy="24" r="1.5" fill="#22D3EE"/>
+          <circle cx="34" cy="24" r="1.5" fill="#22D3EE"/>
+          <circle cx="24" cy="14" r="1.5" fill="#22D3EE"/>
+          <circle cx="24" cy="34" r="1.5" fill="#22D3EE"/>
+          <!-- Central bold monogram -->
+          <text x="24" y="29" text-anchor="middle" font-family="'Space Grotesk', 'Inter', sans-serif" font-weight="800" font-size="15" fill="#22D3EE" letter-spacing="-0.02em">F⊕</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 2. Wordmark + Version Badge -->
+    <div class="splash-wordmark-row">
+      <h1 class="splash-wordmark">Fineatch<span class="brand-ai">AI</span></h1>
+      <span class="splash-version-badge">v1.0</span>
+    </div>
+
+    <!-- 3. One-line Tagline -->
+    <div class="splash-tagline">BANK · GL · AP RECONCILIATION AGENT</div>
+
+    <!-- 4. Start Button -->
+    <button type="button" class="splash-start-btn" id="splashStartBtn">
+      <span>Start</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="splash-btn-arrow"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+    </button>
+  </div>
+
+  <!-- 5. Rotating Quote (Pinned near bottom) -->
+  <div class="splash-quote-dock" id="splashQuoteDock">
+    <span class="splash-quote-dash">—</span>
+    <span class="splash-quote-text" id="splashQuoteText">Reconciliation shouldn't take a week to trust.</span>
+  </div>
+</div>
+
 <div class="shell">
 
   <!-- ═══ HEADER / CONTROL BAR ═══ -->
@@ -43,11 +92,11 @@
         How It Works
       </button>
       <div class="events-pill-wrap" id="eventsPillWrap">
-        <label class="seed-tag events-pill" id="eventsPill" for="eventCount">
-          <span id="eventsPillLabel">events</span>
+        <div class="seed-tag events-pill" id="eventsPill">
+          <label for="eventCount" id="eventsPillLabel">events</label>
           <input type="number" id="eventCount" min="20" max="500" value="65" />
           <button type="button" class="pill-add-btn" id="openDatasetPopover" title="Test with More Datasets">+</button>
-        </label>
+        </div>
         <span class="dataset-toast" id="datasetToast" style="display:none"></span>
         
         <!-- Inline Popover -->
@@ -87,11 +136,7 @@
         <circle class="gauge-progress" id="gaugeProgress" cx="38" cy="38" r="33" />
       </svg>
       <div class="gauge-content">
-        <div class="gauge-rate-row">
-          <span class="gauge-delta" id="gaugeDelta"></span>
-          <span class="gauge-rate" id="gaugeRate">—</span>
-        </div>
-        <span class="gauge-label">Reconciled</span>
+        <span class="gauge-rate" id="gaugeRate">—</span>
       </div>
     </div>
   </header>
@@ -184,6 +229,35 @@
       <span class="kpi-label">Cash position</span>
       <span class="kpi-value" id="kpiCash">—</span>
       <span class="kpi-sub" id="kpiCashSub">—</span>
+    </div>
+  </section>
+
+  <!-- ═══ COLLAPSIBLE RUN INSIGHTS STRIP ═══ -->
+  <section class="insights-strip-wrap" id="insightsSection" style="display:none">
+    <div class="insights-card" id="insightsCard">
+      <button type="button" class="insights-header" id="insightsToggle" aria-expanded="false">
+        <div class="insights-header-left">
+          <div class="insights-icon-box" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          </div>
+          <span class="insights-title">Operational Insights &amp; Recommendations</span>
+          <span class="insights-count-badge" id="insightsCountBadge">3 suggestions</span>
+          <span class="insights-preview-hint" id="insightsPreviewHint">— Click to view key findings</span>
+        </div>
+        <div class="insights-header-right">
+          <span class="insights-toggle-label" id="insightsToggleLabel">Expand</span>
+          <svg class="insights-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+      </button>
+      
+      <!-- Collapsible Body -->
+      <div class="insights-body" id="insightsBody">
+        <div class="insights-grid" id="insightsGrid"></div>
+      </div>
     </div>
   </section>
 

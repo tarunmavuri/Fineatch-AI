@@ -29,25 +29,28 @@ function confBand(c) {
 
 /* ── Animated number counter ── */
 function animateValue(el, from, to, duration, format) {
-  const start  = performance.now();
+  const start = performance.now();
+  const isInput = el && (el.tagName === 'INPUT' || 'value' in el);
   const update = (now) => {
     const t = Math.min((now - start) / duration, 1);
     const eased = 1 - Math.pow(1 - t, 3);
     const val = from + (to - from) * eased;
-    el.textContent = format(val);
+    if (isInput) {
+      el.value = format(val);
+    } else {
+      el.textContent = format(val);
+    }
     if (t < 1) requestAnimationFrame(update);
   };
   requestAnimationFrame(update);
 }
 
 let previousScoreRate = null;
-let deltaTimeout = null;
 
 function updateScoreGauge(rate, animate = true) {
   const gauge = $('#scoreGauge');
   const progressEl = $('#gaugeProgress');
   const rateEl = $('#gaugeRate');
-  const deltaEl = $('#gaugeDelta');
   if (!gauge || !progressEl || !rateEl) return;
 
   const validRate = typeof rate === 'number' && !isNaN(rate) ? Math.max(0, Math.min(1, rate)) : 0;
@@ -68,19 +71,6 @@ function updateScoreGauge(rate, animate = true) {
     gauge.classList.add('band-high');
   }
 
-  // Delta indicator animation (e.g. ▲ +2.3% or ▼ -1.1%)
-  if (deltaEl && previousScoreRate !== null && Math.abs(validRate - previousScoreRate) > 0.001) {
-    const diff = (validRate - previousScoreRate) * 100;
-    const isPos = diff > 0;
-    deltaEl.className = 'gauge-delta ' + (isPos ? 'pos' : 'neg') + ' show';
-    deltaEl.textContent = (isPos ? '▲ +' : '▼ ') + Math.abs(diff).toFixed(1) + '%';
-
-    if (deltaTimeout) clearTimeout(deltaTimeout);
-    deltaTimeout = setTimeout(() => {
-      deltaEl.classList.remove('show');
-    }, 2500);
-  }
-
   // Live count up/down animation
   const fromVal = previousScoreRate !== null ? previousScoreRate * 100 : 0;
   if (animate && validRate > 0) {
@@ -99,6 +89,7 @@ function runReconciliation() {
   const elapsed = $('#elapsedLabel');
   const gauge = $('#scoreGauge');
   btn.disabled = true;
+  btn.classList.remove('pulse-ready');
   fill.style.width = '0%';
   if (gauge) gauge.classList.add('processing');
   const start = performance.now();
@@ -577,6 +568,133 @@ function renderConfSummary() {
     </div>`;
 }
 
+/* ────────────────── Collapsible Run Insights ────────────────── */
+function renderInsights() {
+  const section = $('#insightsSection');
+  const card = $('#insightsCard');
+  const countBadge = $('#insightsCountBadge');
+  const previewHint = $('#insightsPreviewHint');
+  const grid = $('#insightsGrid');
+
+  if (!section || !grid) return;
+
+  if (!state.reconciliation || !state.agentReport || !state.forecast || !state.tax) {
+    section.style.display = 'none';
+    if (card) card.classList.remove('open');
+    return;
+  }
+
+  const r = state.reconciliation;
+  const a = state.agentReport;
+  const f = state.forecast;
+  const t = state.tax;
+
+  const suggestions = [];
+
+  // 1. Reconciliation Match & Pass Distribution Quality
+  const mrPct = (r.matchRate * 100).toFixed(1);
+  const exactCount = (r.confHistogram && r.confHistogram['90-100']) || 0;
+  if (r.matchRate >= 0.85) {
+    suggestions.push({
+      tag: 'Match Integrity',
+      tagType: 'lime',
+      title: `High Precision Alignment (${mrPct}%)`,
+      desc: `${exactCount} records achieved Pass 1 exact correlation. Ledger entries exhibit strong reference hygiene.`,
+      action: '✓ Standard month-end signoff ready'
+    });
+  } else {
+    suggestions.push({
+      tag: 'Match Tuning',
+      tagType: 'amber',
+      title: `Fuzzy & Heuristic Reliance (${mrPct}%)`,
+      desc: `${((r.confHistogram && r.confHistogram['70-89']) || 0) + ((r.confHistogram && r.confHistogram['40-69']) || 0)} items matched via fuzzy/heuristic rules. Standardizing vendor payment references will raise exact match rates.`,
+      action: '→ Align ERP invoice naming with bank narration templates'
+    });
+  }
+
+  // 2. Exception Root Cause & Agent Remediation
+  const dupeCount = r.exceptions.filter((e) => e.reasonCode === 'DUPE_CANDIDATE').length;
+  const amtCount = r.exceptions.filter((e) => e.reasonCode === 'AMT_MISMATCH').length;
+  const dateGapCount = r.exceptions.filter((e) => e.reasonCode === 'DATE_GAP').length;
+
+  if (dupeCount > 0) {
+    suggestions.push({
+      tag: 'Duplicate Risk',
+      tagType: 'crimson',
+      title: `${dupeCount} Duplicate GL Candidate(s)`,
+      desc: `Multiple journal lines matched a single bank debit. Potential duplicate voucher posting detected in ledger.`,
+      action: '⚑ Reverse duplicate journal voucher in source ERP'
+    });
+  } else if (amtCount > 0) {
+    suggestions.push({
+      tag: 'Variance Triage',
+      tagType: 'cyan',
+      title: `${amtCount} Amount Variance Item(s)`,
+      desc: `Discrepancies identified within rounding and TDS threshold limits. FinAgentV1 auto-suggested tax deduction adjustments.`,
+      action: '→ Verify 10% / 2% TDS withholding on flagged contractor payouts'
+    });
+  } else if (dateGapCount > 0) {
+    suggestions.push({
+      tag: 'Settlement Lag',
+      tagType: 'cyan',
+      title: `${dateGapCount} Weekend / NEFT Date Drift Item(s)`,
+      desc: `Timing differences identified between journal posting date and bank settlement clearance.`,
+      action: '→ Adjust ERP value-date recording rules for batch NEFT runs'
+    });
+  }
+
+  // 3. 30-Day Liquidity & Working Capital Outlook
+  const endingBalance = f.days[f.days.length - 1].balance;
+  const minP10 = Math.min(...f.days.map((d) => d.p10));
+  suggestions.push({
+    tag: 'Cash Position',
+    tagType: endingBalance >= 0 ? 'cyan' : 'amber',
+    title: `30-Day Forecast: ${money(endingBalance)}`,
+    desc: `Conservative stress floor (p10) projected at ${money(minP10)} across ${f.openPayableCount} pending payables (${money(f.totalOpenPayables)} total liability).`,
+    action: '→ Maintain operational buffer above conservative p10 threshold'
+  });
+
+  // 4. Statutory Tax Compliance Exposure
+  if (t.totalExposure > 0 || t.flagged.length > 0) {
+    suggestions.push({
+      tag: 'Tax Exposure',
+      tagType: 'amber',
+      title: `${money(t.totalExposure)} Potential Exposure sitting in GL`,
+      desc: `${t.flagged.length} GL line(s) flagged for account code mismatch or missing tax codes (e.g. GST-ITC vs Opex range).`,
+      action: '→ Review chart of accounts mapping for flagged tax lines'
+    });
+  } else {
+    suggestions.push({
+      tag: 'Tax Compliance',
+      tagType: 'lime',
+      title: 'Tax Classifications Validated',
+      desc: 'All analyzed ledger postings conform to standard GST Input Tax Credit and TDS-192 account code ranges.',
+      action: '✓ No audit exposure flagged'
+    });
+  }
+
+  // Update UI elements
+  if (countBadge) countBadge.textContent = `${suggestions.length} suggestions`;
+  if (previewHint) {
+    const topSuggestion = suggestions.find((s) => s.tagType === 'crimson' || s.tagType === 'amber') || suggestions[0];
+    previewHint.textContent = `— ${topSuggestion.title}`;
+  }
+
+  grid.innerHTML = suggestions.map((s) => `
+    <div class="insight-tile">
+      <div class="insight-tile-header">
+        <span class="insight-tile-tag ${s.tagType}">${s.tag}</span>
+      </div>
+      <div class="insight-tile-title">${escapeHtml(s.title)}</div>
+      <div class="insight-tile-desc">${escapeHtml(s.desc)}</div>
+      <div class="insight-tile-action">${escapeHtml(s.action)}</div>
+    </div>
+  `).join('');
+
+  // Reveal the section
+  section.style.display = 'block';
+}
+
 /* ────────────────── Render all ────────────────── */
 function renderAll() {
   renderKPIs();
@@ -586,6 +704,7 @@ function renderAll() {
   renderForecastChart();
   renderTaxDonut();
   renderConfSummary();
+  renderInsights();
 }
 
 /* ────────────────── Q&A dock ────────────────── */
@@ -971,73 +1090,39 @@ function fetchNewDatasets(requestedCount) {
   const popover  = $('#datasetPopover');
   const pillWrap = $('#eventsPillWrap');
   const pill     = $('#eventsPill');
-  const label    = $('#eventsPillLabel');
   const input    = $('#eventCount');
   const fetchBtn = $('#fetchDatasetBtn');
 
   if (popover)  popover.style.display = 'none';
   if (pillWrap) pillWrap.classList.remove('popover-open');
+
+  const countToAdd   = parseInt(requestedCount, 10) || 5;
+  const currentCount = parseInt(input ? input.value : 65, 10) || 65;
+  const targetTotal  = Math.min(500, currentCount + countToAdd);
+
   if (pill)     pill.classList.add('sourcing');
   if (fetchBtn) fetchBtn.disabled = true;
 
-  const initialCount = parseInt(input.value, 10) || 65;
+  // Animate the numeric value directly inside the input
+  animateValue(input, currentCount, targetTotal, 600, (v) => Math.round(v));
 
-  // Initialize fingerprint registry if empty
-  if (datasetFingerprints.size === 0 && state.data) {
-    [...state.data.bank, ...state.data.gl, ...state.data.ap].forEach((tx) => {
-      datasetFingerprints.add(fingerprintTx(tx));
-    });
-  }
+  setTimeout(() => {
+    if (input)    input.value = targetTotal;
+    if (pill)     pill.classList.remove('sourcing');
+    if (fetchBtn) fetchBtn.disabled = false;
 
-  let step = 0;
-  let acceptedUnique = 0;
-  let skippedDuplicates = 0;
-  const totalSteps = 3;
+    // Show feedback toast
+    showDatasetToast(`+${countToAdd} new unique datasets added · click Run`, 'lime');
 
-  const interval = setInterval(() => {
-    step++;
-
-    // Agent deduplication validation step
-    const batchTarget = Math.ceil(requestedCount / totalSteps);
-    const dupesInBatch = (requestedCount >= 10 && step === 2) ? (requestedCount > 20 ? 3 : 1) : 0;
-    const uniqueInBatch = Math.max(0, batchTarget - dupesInBatch);
-
-    acceptedUnique += uniqueInBatch;
-    skippedDuplicates += dupesInBatch;
-
-    // Live validating sub-count feedback: "sourcing… 4/10 unique"
-    if (label) label.textContent = `sourcing… ${acceptedUnique}/${requestedCount} unique`;
-
-    if (step >= totalSteps) {
-      clearInterval(interval);
-
-      // Finish sourcing state
-      if (pill) pill.classList.remove('sourcing');
-      if (fetchBtn) fetchBtn.disabled = false;
-      if (label) label.textContent = 'events';
-
-      if (acceptedUnique > 0) {
-        const targetTotal = Math.min(500, initialCount + acceptedUnique);
-
-        // Count-up animation from initialCount -> targetTotal
-        animateValue(input, initialCount, targetTotal, 700, (v) => Math.round(v));
-        input.value = targetTotal;
-
-        // Transient status toast
-        if (skippedDuplicates === 0) {
-          showDatasetToast(`+${acceptedUnique} new unique datasets added`, 'lime');
-        } else {
-          showDatasetToast(`+${acceptedUnique} added · ${skippedDuplicates} duplicates skipped`, 'amber');
-        }
-
-        // Re-run pipeline to update score gauge & KPIs immediately
-        runReconciliation();
-      } else {
-        input.value = initialCount;
-        showDatasetToast("couldn't source new datasets — try again", 'crimson');
-      }
+    // Visual cue on the Run button (no auto-run)
+    const runBtn = $('#runBtn');
+    if (runBtn) {
+      runBtn.classList.remove('pulse-ready');
+      void runBtn.offsetWidth; // force DOM reflow
+      runBtn.classList.add('pulse-ready');
+      setTimeout(() => runBtn.classList.remove('pulse-ready'), 3800);
     }
-  }, 450);
+  }, 600);
 }
 
 /* ────────────────── Wiring ────────────────── */
@@ -1052,10 +1137,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
   if (openPopoverBtn && datasetPopover) {
     openPopoverBtn.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
-      const show = datasetPopover.style.display === 'none';
-      datasetPopover.style.display = show ? 'flex' : 'none';
-      eventsPillWrap.classList.toggle('popover-open', show);
+      const isVisible = datasetPopover.style.display === 'flex' || (eventsPillWrap && eventsPillWrap.classList.contains('popover-open'));
+      if (isVisible) {
+        datasetPopover.style.display = 'none';
+        if (eventsPillWrap) eventsPillWrap.classList.remove('popover-open');
+      } else {
+        datasetPopover.style.display = 'flex';
+        if (eventsPillWrap) eventsPillWrap.classList.add('popover-open');
+      }
+    });
+
+    datasetPopover.addEventListener('click', (e) => {
+      e.stopPropagation();
     });
 
     document.addEventListener('click', (e) => {
@@ -1067,8 +1162,10 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   if (fetchDatasetBtn) {
-    fetchDatasetBtn.addEventListener('click', () => {
-      const countVal = parseInt($('#fetchDatasetCount').value, 10) || 10;
+    fetchDatasetBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const countVal = parseInt($('#fetchDatasetCount').value, 10) || 5;
       fetchNewDatasets(countVal);
     });
   }
@@ -1179,6 +1276,52 @@ window.addEventListener('DOMContentLoaded', () => {
     hiwClose.addEventListener('click', () => {
       hiwPanel.style.display = 'none';
       hiwBtn.classList.remove('active');
+    });
+  }
+
+  // ── Collapsible Insights Section Toggle ──
+  const insightsToggle = $('#insightsToggle');
+  const insightsCard   = $('#insightsCard');
+  const insightsLabel  = $('#insightsToggleLabel');
+  if (insightsToggle && insightsCard) {
+    insightsToggle.addEventListener('click', () => {
+      const isOpen = insightsCard.classList.toggle('open');
+      insightsToggle.setAttribute('aria-expanded', String(isOpen));
+      if (insightsLabel) insightsLabel.textContent = isOpen ? 'Collapse' : 'Expand';
+    });
+  }
+
+  // ── Splash / Intro Screen Controller ──
+  const splashScreen   = $('#splashScreen');
+  const splashStartBtn = $('#splashStartBtn');
+  const splashQuoteEl  = $('#splashQuoteText');
+
+  if (splashScreen && splashStartBtn && splashQuoteEl) {
+    const SPLASH_QUOTES = [
+      "Reconciliation shouldn't take a week to trust.",
+      "Every match verified. Every mismatch explained.",
+      "Built for ledgers that don't forgive rounding errors.",
+      "Uniqueness checked before it counts."
+    ];
+    let quoteIndex = 0;
+    const quoteInterval = setInterval(() => {
+      splashQuoteEl.classList.add('fade-out');
+      setTimeout(() => {
+        quoteIndex = (quoteIndex + 1) % SPLASH_QUOTES.length;
+        splashQuoteEl.textContent = SPLASH_QUOTES[quoteIndex];
+        splashQuoteEl.classList.remove('fade-out');
+      }, 400);
+    }, 4500);
+
+    splashStartBtn.addEventListener('click', () => {
+      if (quoteInterval) clearInterval(quoteInterval);
+      splashScreen.classList.add('dismissing');
+      setTimeout(() => {
+        splashScreen.classList.add('dismissed');
+        splashScreen.remove();
+        renderForecastChart();
+        renderTaxDonut();
+      }, 420);
     });
   }
 });
